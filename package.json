@@ -13,6 +13,7 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
     "hono": "^4.13.1"
   },
   "devDependencies": {
