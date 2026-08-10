@@ -10,6 +10,16 @@ noon-sight is an MCP server on Cloudflare Workers exposing Google Analytics and 
 
 **No SPEC.md.** Correctness is expressed by vitest tests, not by specification documents.
 
+## Working together
+
+Work runs in two movements, and the boundary between them carries more weight than the commands do.
+
+**Aligning.** Aotokitsuruya opens with `/inspect`, which reads and asks but changes nothing. An item joins the work list only once both its intent and its scope are settled; whatever stays ambiguous stays out, rather than being resolved by guessing.
+
+**Executing.** Once the work list is agreed and `/goal` fixes the finishing condition, run the loop unattended: `/write` or `/refactor`, then `/inspect` again as code review, `/refactor` on what it surfaces, and `/git:commit`. If part of the list turns out to be blocked, finish the rest and say what was left out — narrowing the list is not a decision to make alone.
+
+That loop invites more design than this project wants: its skills offer layered structures, patterns and abstractions by default. Minimal by design still governs. Reach for the smallest implementation the tests accept, and treat the review pass as an opportunity to delete what the previous step made unnecessary rather than to enrich it.
+
 ## Commands
 
 | Command           | Purpose                                                                              |
