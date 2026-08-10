@@ -41,7 +41,7 @@ const post = async (body: unknown, headers: Record<string, string> = {}) => {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json, text/event-stream",
-        "Cf-Access-Jwt-Assertion": assertion,
+        "cf-access-jwt-assertion": assertion,
         ...headers,
       },
       body: JSON.stringify(body),

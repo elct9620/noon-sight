@@ -37,7 +37,7 @@ const get = async (token?: string) => {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json, text/event-stream",
-        ...(token ? { "Cf-Access-Jwt-Assertion": token } : {}),
+        ...(token ? { "cf-access-jwt-assertion": token } : {}),
       },
       body: JSON.stringify({
         jsonrpc: "2.0",
@@ -94,7 +94,7 @@ describe("Access guard", () => {
     const response = await createApp(undefined).fetch(
       new Request("http://localhost/mcp", {
         method: "POST",
-        headers: { "Cf-Access-Jwt-Assertion": await sign() },
+        headers: { "cf-access-jwt-assertion": await sign() },
         body: "{}",
       }),
       env,
