@@ -3,6 +3,10 @@
   "name": "noon-sight",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-08",
+  // Every new version mints its own preview hostname, and Access is enabled per
+  // hostname, so previews would accumulate entrances nobody remembers to guard.
+  // The workers.dev URL stays on: it is the one Access is attached to.
+  "preview_urls": false,
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],
