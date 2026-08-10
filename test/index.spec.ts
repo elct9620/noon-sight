@@ -9,19 +9,39 @@ import {
   waitOnExecutionContext,
 } from "cloudflare:test";
 import { env } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
-import worker from "../src/index";
+import { SignJWT, generateKeyPair } from "jose";
+import { beforeAll, describe, expect, it } from "vitest";
+import { createApp } from "../src/index";
 
 const MODERN_PROTOCOL_VERSION = "2026-07-28";
+const ALG = "RS256";
+
+// Every request past the guard needs an assertion, so the protocol cases stand
+// in for a client Access has already admitted. `test/access.spec.ts` owns what
+// happens when it has not.
+let keys: CryptoKeyPair;
+let assertion: string;
+
+beforeAll(async () => {
+  keys = await generateKeyPair(ALG);
+  assertion = await new SignJWT({ email: "user@example.com" })
+    .setProtectedHeader({ alg: ALG })
+    .setIssuedAt()
+    .setIssuer(String(env.TEAM_DOMAIN))
+    .setAudience(String(env.POLICY_AUD))
+    .setExpirationTime("1h")
+    .sign(keys.privateKey);
+});
 
 const post = async (body: unknown, headers: Record<string, string> = {}) => {
   const ctx = createExecutionContext();
-  const response = await worker.fetch(
+  const response = await createApp(keys.publicKey).fetch(
     new Request("http://localhost/mcp", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json, text/event-stream",
+        "Cf-Access-Jwt-Assertion": assertion,
         ...headers,
       },
       body: JSON.stringify(body),
