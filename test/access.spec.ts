@@ -76,6 +76,20 @@ describe("Access guard", () => {
     expect((await get(await sign({ audience: "other-app" }))).status).toBe(403);
   });
 
+  // A long-lived client holding on to an assertion is the ordinary way this
+  // happens, so expiry is a real denial rather than an attack.
+  it("denies an assertion that has expired", async () => {
+    const stale = await new SignJWT({ email: "user@example.com" })
+      .setProtectedHeader({ alg: ALG })
+      .setIssuedAt("2 hours ago")
+      .setIssuer(ISSUER)
+      .setAudience(AUDIENCE)
+      .setExpirationTime("1 hour ago")
+      .sign(keys.privateKey);
+
+    expect((await get(stale)).status).toBe(403);
+  });
+
   it("denies a token from another team", async () => {
     const elsewhere = "https://other.cloudflareaccess.com";
     expect((await get(await sign({ issuer: elsewhere }))).status).toBe(403);
