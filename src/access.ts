@@ -12,9 +12,9 @@ const ASSERTION_HEADER = "Cf-Access-Jwt-Assertion";
 export const isBypassed = (debug?: string) => debug === "true";
 
 /**
- * Trust comes from the signature, not from the header being present: a Worker
- * is reachable at its workers.dev URL, so an unverified assertion is one an
- * attacker can write.
+ * Trust comes from the signature, not from the header being present: the Worker
+ * answers on a public hostname, so an unverified assertion is one an attacker
+ * can write.
  *
  * The team domain is re-checked here rather than taken on faith from the
  * caller, because passing it to jose as `undefined` would drop the issuer

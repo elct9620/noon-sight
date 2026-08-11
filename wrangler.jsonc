@@ -3,9 +3,12 @@
   "name": "noon-sight",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-08",
-  // Every new version mints its own preview hostname, and Access is enabled per
-  // hostname, so previews would accumulate entrances nobody remembers to guard.
-  // The workers.dev URL stays on: it is the one Access is attached to.
+  // Access is enabled per hostname, so every hostname this Worker answers on is
+  // one that has to be guarded. The custom domain is that hostname; the
+  // workers.dev URL and the per-version preview URLs would accumulate entrances
+  // nobody remembers to guard, so neither is minted.
+  "routes": [{ "pattern": "noon-sight.aotoki.dev", "custom_domain": true }],
+  "workers_dev": false,
   "preview_urls": false,
   // "compatibility_flags": [
   //   "nodejs_compat"
