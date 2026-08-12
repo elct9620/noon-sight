@@ -4,8 +4,20 @@ import { SignJWT, importPKCS8 } from "jose";
 /** Google mints the token here, and the assertion has to name it as audience. */
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
-/** Reading reports is all this server does, so it asks for nothing wider. */
-const SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
+/**
+ * Reading is all this server does, so it asks for nothing wider than the two
+ * read scopes. One assertion names both rather than one token per API: they
+ * expire together and cache under one key. Whether the account can actually
+ * read a given property is not settled here but by that property's own user
+ * list, so naming both costs nothing where only one is set up.
+ *
+ * Google reads the claim as a space-delimited string, and answers a comma with
+ * `invalid_scope`.
+ */
+const SCOPE = [
+  "https://www.googleapis.com/auth/analytics.readonly",
+  "https://www.googleapis.com/auth/webmasters.readonly",
+].join(" ");
 
 const CACHE_KEY = "google-access-token";
 

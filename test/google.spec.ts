@@ -44,14 +44,16 @@ describe("accessToken", () => {
 
   // Signing is where workerd has to import the PKCS#8 private key, so the
   // assertion arriving well-formed is what proves that import happened.
-  it("names the service account, the token endpoint and the read scope", async () => {
+  // The separator is pinned too: Google answers a comma with `invalid_scope`.
+  it("names the service account, the token endpoint and both read scopes", async () => {
     mints("ya29.claims");
     await accessToken();
 
     expect(decodeJwt(String(exchanges[0].get("assertion")))).toMatchObject({
       iss: "noon-sight@test.iam.gserviceaccount.com",
       aud: TOKEN_ENDPOINT,
-      scope: "https://www.googleapis.com/auth/analytics.readonly",
+      scope:
+        "https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/webmasters.readonly",
     });
   });
 
