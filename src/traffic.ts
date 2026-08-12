@@ -37,6 +37,7 @@ type Breakdown = keyof typeof BREAKDOWNS;
 
 type Input = {
   breakdown?: Breakdown[];
+  where?: Partial<Record<Breakdown, string>>;
   days?: number;
   limit?: number;
 };
@@ -50,6 +51,15 @@ const inputSchema = fromJsonSchema<Input>({
       maxItems: 2,
       description:
         "How to group the traffic. Omit for the site as a whole. `channel` and `source` say where visitors came from, `page` which content brought them in, `country`, `device` and `visitor_type` who they are. Two may be combined to cross them.",
+    },
+    where: {
+      type: "object",
+      properties: Object.fromEntries(
+        Object.keys(BREAKDOWNS).map((key) => [key, { type: "string" }]),
+      ),
+      additionalProperties: false,
+      description:
+        'Narrow the report to one segment, keyed the same way as `breakdown` and valued as the report itself reports it — `{"country": "Taiwan"}`, `{"channel": "Organic Search"}`. Several keys must all hold. A segment can be narrowed on without being grouped by.',
     },
     days: {
       type: "integer",
@@ -66,6 +76,21 @@ const inputSchema = fromJsonSchema<Input>({
   },
   additionalProperties: false,
 });
+
+/**
+ * Every condition has to hold, which is what `andGroup` says. Google matches a
+ * string exactly unless told otherwise, and exact is what a segment means.
+ */
+const segment = (where: Partial<Record<Breakdown, string>>) => {
+  const expressions = Object.entries(where).map(([key, value]) => ({
+    filter: {
+      fieldName: BREAKDOWNS[key as Breakdown],
+      stringFilter: { value },
+    },
+  }));
+
+  return expressions.length ? { andGroup: { expressions } } : undefined;
+};
 
 /** Google reads `NdaysAgo`, so the windows need no date arithmetic here. */
 const windows = (days: number) => [
@@ -86,7 +111,12 @@ export const registerTrafficReport = (server: McpServer) =>
         "Report Google Analytics traffic for a period against the equally long period before it, so growth and decline are readable without a second call. Every row carries the same metrics for both periods.",
       inputSchema,
     },
-    async ({ breakdown = [], days = DEFAULT_DAYS, limit = DEFAULT_LIMIT }) => {
+    async ({
+      breakdown = [],
+      where = {},
+      days = DEFAULT_DAYS,
+      limit = DEFAULT_LIMIT,
+    }) => {
       if (!env.GA_PROPERTY_ID) {
         throw new Error("No Google Analytics property is configured");
       }
@@ -96,6 +126,7 @@ export const registerTrafficReport = (server: McpServer) =>
         dimensions: breakdown.map((key) => ({ name: BREAKDOWNS[key] })),
         metrics: METRICS.map((name) => ({ name })),
         dateRanges: periods,
+        dimensionFilter: segment(where),
       });
 
       // Ranking and cutting happen after both periods are folded together: a

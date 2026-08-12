@@ -230,6 +230,71 @@ describe("traffic_report", () => {
     ]);
   });
 
+  // An ungrouped total merges populations that behave differently, so reading
+  // one of them apart is the only way that total means anything.
+  it("narrows to a segment without grouping by it", async () => {
+    reports([]);
+
+    await call("tools/call", {
+      name: "traffic_report",
+      arguments: { breakdown: ["page"], where: { country: "Taiwan" } },
+    });
+
+    expect(requests[0].dimensionFilter).toEqual({
+      andGroup: {
+        expressions: [
+          {
+            filter: {
+              fieldName: "country",
+              stringFilter: { value: "Taiwan" },
+            },
+          },
+        ],
+      },
+    });
+    expect(requests[0].dimensions).toEqual([
+      { name: "landingPagePlusQueryString" },
+    ]);
+  });
+
+  it("requires every condition of a segment to hold", async () => {
+    reports([]);
+
+    await call("tools/call", {
+      name: "traffic_report",
+      arguments: {
+        where: { country: "Taiwan", channel: "Organic Search" },
+      },
+    });
+
+    expect(requests[0].dimensionFilter).toEqual({
+      andGroup: {
+        expressions: [
+          {
+            filter: { fieldName: "country", stringFilter: { value: "Taiwan" } },
+          },
+          {
+            filter: {
+              fieldName: "sessionDefaultChannelGroup",
+              stringFilter: { value: "Organic Search" },
+            },
+          },
+        ],
+      },
+    });
+  });
+
+  it("asks for no filter when no segment is named", async () => {
+    reports([]);
+
+    await call("tools/call", {
+      name: "traffic_report",
+      arguments: {},
+    });
+
+    expect(requests[0]).not.toHaveProperty("dimensionFilter");
+  });
+
   it("groups by nothing when no breakdown is asked for", async () => {
     reports([]);
 
