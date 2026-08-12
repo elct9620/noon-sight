@@ -1,0 +1,109 @@
+import { accessToken } from "./google";
+
+const DATA_API = "https://analyticsdata.googleapis.com/v1beta";
+
+/**
+ * Google names the two date ranges back to the caller through a `dateRange`
+ * dimension it adds to every row, so these names are how a row says which
+ * period it belongs to.
+ */
+export const CURRENT = "current";
+export const PREVIOUS = "previous";
+
+const PERIOD_DIMENSION = "dateRange";
+
+type Header = { name: string };
+
+type ReportRow = {
+  dimensionValues: { value: string }[];
+  metricValues: { value: string }[];
+};
+
+export type Report = {
+  dimensionHeaders?: Header[];
+  metricHeaders?: Header[];
+  rows?: ReportRow[];
+};
+
+type Periods = {
+  current: Record<string, number>;
+  previous: Record<string, number>;
+};
+
+/** A dimension value per breakdown, and the same metrics for both periods. */
+export type ComparedRow = Periods & Record<string, unknown>;
+
+export const runReport = async (
+  propertyId: string,
+  request: unknown,
+): Promise<Report> => {
+  const response = await fetch(
+    `${DATA_API}/properties/${propertyId}:runReport`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await accessToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    },
+  );
+
+  // The body repeats the property and the credential, so only the status does.
+  if (!response.ok) {
+    throw new Error(`Google Analytics refused the report (${response.status})`);
+  }
+
+  return response.json<Report>();
+};
+
+/**
+ * The API answers a table addressed by column position — headers on one side,
+ * bare values on the other, and one row per period. Reading that is the
+ * caller's work only if we hand it over, so it is folded here into one row per
+ * breakdown carrying both periods.
+ *
+ * A breakdown present in only one period still gets both, the absent side
+ * reading zero, because a channel that appeared or vanished is exactly what
+ * the comparison exists to show.
+ */
+export const compare = (report: Report): ComparedRow[] => {
+  const dimensions = (report.dimensionHeaders ?? []).map(({ name }) => name);
+  const metrics = (report.metricHeaders ?? []).map(({ name }) => name);
+  const periodAt = dimensions.indexOf(PERIOD_DIMENSION);
+
+  const zeroed = () => Object.fromEntries(metrics.map((name) => [name, 0]));
+  const folded = new Map<
+    string,
+    { breakdown: Record<string, string> } & Periods
+  >();
+
+  for (const row of report.rows ?? []) {
+    const values = row.dimensionValues.map(({ value }) => value);
+    const breakdown = Object.fromEntries(
+      dimensions.flatMap((name, at) =>
+        at === periodAt ? [] : [[name, values[at]]],
+      ),
+    );
+
+    const key = JSON.stringify(breakdown);
+    const compared = folded.get(key) ?? {
+      breakdown,
+      current: zeroed(),
+      previous: zeroed(),
+    };
+    folded.set(key, compared);
+
+    const period = values[periodAt] === PREVIOUS ? PREVIOUS : CURRENT;
+    metrics.forEach((name, at) => {
+      compared[period][name] = Number(row.metricValues[at]?.value ?? 0);
+    });
+  }
+
+  // The breakdown is grouped on while folding and spread on the way out, so a
+  // caller reads `{ channel, current, previous }` rather than a nested key.
+  return [...folded.values()].map(({ breakdown, ...periods }) => ({
+    ...breakdown,
+    ...periods,
+  }));
+};
