@@ -10,5 +10,6 @@ declare namespace Cloudflare {
     DEBUG?: string;
     GOOGLE_SERVICE_ACCOUNT?: string;
     GA_PROPERTY_ID?: string;
+    GSC_SITE_URL?: string;
   }
 }

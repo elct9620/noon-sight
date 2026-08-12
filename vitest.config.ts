@@ -22,6 +22,7 @@ export default defineConfig({
           TEAM_DOMAIN: "https://test.cloudflareaccess.com",
           POLICY_AUD: "test-policy-aud",
           GA_PROPERTY_ID: "123456",
+          GSC_SITE_URL: "sc-domain:test.example",
           GOOGLE_SERVICE_ACCOUNT: JSON.stringify({
             client_email: "noon-sight@test.iam.gserviceaccount.com",
             private_key: await exportPKCS8(privateKey),

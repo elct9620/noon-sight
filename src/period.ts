@@ -28,6 +28,8 @@ const iso = (at: number) => new Date(at).toISOString().slice(0, 10);
 const before = (date: string, days: number) =>
   iso(Date.parse(`${date}T00:00:00Z`) - days * DAY_MS);
 
+export const today = () => iso(Date.now());
+
 /** The most recent day a source is expected to have finished counting. */
 export const settled = () => iso(Date.now() - LAG_DAYS * DAY_MS);
 

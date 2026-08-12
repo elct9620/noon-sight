@@ -3,6 +3,7 @@ import { env } from "cloudflare:workers";
 import { Hono } from "hono";
 import { type JWTVerifyGetKey, type KeyInput, createRemoteJWKSet } from "jose";
 import { accessGuard } from "./access";
+import { registerSearchReport } from "./search";
 import { registerTrafficReport } from "./traffic";
 
 /**
@@ -30,6 +31,7 @@ const handler = createMcpHandler(() => {
     { instructions: INSTRUCTIONS },
   );
   registerTrafficReport(server);
+  registerSearchReport(server);
 
   return server;
 });
