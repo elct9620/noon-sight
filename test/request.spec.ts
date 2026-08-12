@@ -170,15 +170,16 @@ const readReport = async (response: Response) =>
 const report = (args: Record<string, unknown>) =>
   call("tools/call", { name: "request_report", arguments: args });
 
+/** What was asked for the windows, as opposed to what the zone allows. */
+const reports = () => asked.filter(({ query }) => !query.includes("settings"));
+
 /** The windows themselves, without the question about what this zone allows. */
 const windows = () =>
-  asked
-    .filter(({ query }) => !query.includes("settings"))
-    .flatMap(({ variables }) =>
-      Object.entries(variables)
-        .filter(([name]) => name !== "zoneTag")
-        .map(([, filter]) => filter as Filter),
-    );
+  reports().flatMap(({ variables }) =>
+    Object.entries(variables)
+      .filter(([name]) => name !== "zoneTag")
+      .map(([, filter]) => filter as Filter),
+  );
 
 /** A window belongs to the current period when it starts on or after this day. */
 const from = (filter: Filter, day: string) => filter.datetime_geq >= day;
@@ -267,6 +268,10 @@ describe("request_report", () => {
     // One day either side of the anchor, each in two halves, and every one of
     // them narrowed the same way — including to the ports the site also
     // answers on, which an exact match on the name alone would drop.
+    //
+    // All four ride in one request. A week is seven of them on this plan, and
+    // asking one at a time is what the single round trip exists to avoid.
+    expect(reports()).toHaveLength(1);
     expect(windows()).toHaveLength(4);
     expect(windows().slice(0, 2)).toEqual([
       {
