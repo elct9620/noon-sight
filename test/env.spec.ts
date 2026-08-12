@@ -16,10 +16,11 @@ describe("test environment", () => {
   });
 
   // A developer's own Service Account would sign assertions that reach Google
-  // for real, so the suite signs with a key it generated instead.
-  it("signs with a generated service account rather than a developer's", () => {
+  // for real, and their own property would be the one the report tests address.
+  it("reports against a generated service account and a stated property", () => {
     expect(env.GOOGLE_SERVICE_ACCOUNT).toContain(
       "noon-sight@test.iam.gserviceaccount.com",
     );
+    expect(env.GA_PROPERTY_ID).toBe("123456");
   });
 });

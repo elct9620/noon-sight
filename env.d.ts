@@ -9,5 +9,6 @@ declare namespace Cloudflare {
     POLICY_AUD?: string;
     DEBUG?: string;
     GOOGLE_SERVICE_ACCOUNT?: string;
+    GA_PROPERTY_ID?: string;
   }
 }

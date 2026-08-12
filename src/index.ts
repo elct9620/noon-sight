@@ -3,12 +3,16 @@ import { env } from "cloudflare:workers";
 import { Hono } from "hono";
 import { type JWTVerifyGetKey, type KeyInput, createRemoteJWKSet } from "jose";
 import { accessGuard } from "./access";
+import { registerTrafficReport } from "./traffic";
 
 // The factory runs per request: under 2026-07-28 a request carries its own
 // protocol version, identity and capabilities, so nothing outlives one exchange.
-const handler = createMcpHandler(
-  () => new McpServer({ name: "noon-sight", version: "0.1.0" }),
-);
+const handler = createMcpHandler(() => {
+  const server = new McpServer({ name: "noon-sight", version: "0.1.0" });
+  registerTrafficReport(server);
+
+  return server;
+});
 
 // The verifying key is the composition root's only argument, which is what lets
 // a test drive the endpoint with a key it holds the private half of.
