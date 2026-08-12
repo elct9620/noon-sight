@@ -104,6 +104,30 @@ describe("mcp endpoint", () => {
     });
   });
 
+  // Guidance a client has to ask for arrives too late: whoever already holds
+  // the numbers does not think to ask how to read them. Both client
+  // generations get it with the handshake, so neither is left without.
+  it("hands both client generations its reading instructions", async () => {
+    const modern = await readResult(await call("server/discover"));
+    const legacy = await readResult(
+      await post({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: LATEST_PROTOCOL_VERSION,
+          capabilities: {},
+          clientInfo: { name: "test", version: "0.0.0" },
+        },
+      }),
+    );
+
+    for (const result of [modern, legacy]) {
+      expect(result.instructions).toContain("read the change, not the number");
+      expect(result.instructions).toContain("ungrouped total");
+    }
+  });
+
   it("hands out no session", async () => {
     const response = await call("server/discover");
 
