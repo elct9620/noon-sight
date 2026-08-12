@@ -55,6 +55,19 @@ describe("accessToken", () => {
     });
   });
 
+  // A `get` may answer from a location holding the key for up to its cacheTtl,
+  // so the margin has to outlast that staleness and not merely the request.
+  it("lets the cached token go well before Google expires it", async () => {
+    mints("ya29.expiring", 3600);
+    await accessToken();
+
+    const { keys } = await env.TOKEN_CACHE.list();
+    const seconds = keys[0].expiration! - Math.floor(Date.now() / 1000);
+
+    expect(seconds).toBeLessThanOrEqual(3600 - 300);
+    expect(seconds).toBeGreaterThan(3600 - 360);
+  });
+
   it("serves a second call from the cache instead of exchanging again", async () => {
     mints("ya29.cached");
 

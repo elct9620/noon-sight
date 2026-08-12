@@ -10,10 +10,15 @@ const SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const CACHE_KEY = "google-access-token";
 
 /**
- * A token handed out in its final seconds would expire mid-request, and KV
- * refuses a TTL under a minute; one minute of margin answers both.
+ * The cache expires the token before Google does, because a token handed out
+ * in its final seconds would expire mid-request.
+ *
+ * The margin has to outlast KV's own read cache rather than merely the request:
+ * a `get` may answer from a location that has held the key for up to
+ * `cacheTtl`, sixty seconds by default, so a sixty-second margin can be spent
+ * entirely on staleness and hand back a token that has already expired.
  */
-const EXPIRY_MARGIN_SECONDS = 60;
+const EXPIRY_MARGIN_SECONDS = 300;
 
 type ServiceAccount = { client_email: string; private_key: string };
 
