@@ -19,10 +19,14 @@
   // A Google access token lives an hour and is the same for every request, so
   // it is cached rather than minted per call. KV expires it by TTL, which is
   // why nothing here ever deletes a key.
+  //
+  // Declared without an id so wrangler provisions the namespace itself and
+  // names it after this Worker. A hand-made namespace carries a name that says
+  // nothing about what it belongs to, and an account-specific id in the
+  // repository is one more thing that has to be true of whoever deploys.
   "kv_namespaces": [
     {
       "binding": "TOKEN_CACHE",
-      "id": "34f915363ad14a0d907c15d5a21c07f7",
     },
   ],
   // "r2_buckets": [
