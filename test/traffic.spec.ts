@@ -416,6 +416,29 @@ describe("traffic_report", () => {
     expect(requests).toHaveLength(0);
   });
 
+  // Same as every other source here: not configured is an answer the caller can
+  // read, not a tool that quietly stops existing.
+  it("says so when no property is configured rather than going quiet", async () => {
+    reports([]);
+    const configured = env.GA_PROPERTY_ID;
+    env.GA_PROPERTY_ID = undefined;
+
+    try {
+      const result = await readResult(
+        await call("tools/call", {
+          name: "traffic_report",
+          arguments: {},
+        }),
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Google Analytics");
+      expect(requests).toHaveLength(0);
+    } finally {
+      env.GA_PROPERTY_ID = configured;
+    }
+  });
+
   it("is not reachable without an Access assertion", async () => {
     const response = await call(
       "tools/call",

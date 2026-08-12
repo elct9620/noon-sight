@@ -392,6 +392,25 @@ describe("search_report", () => {
     expect(rows[0].query).toBe("large");
   });
 
+  // A source nobody has configured yet still answers, and says why. Hiding the
+  // tool instead would leave a caller unable to tell an unconfigured server
+  // from one whose search data is genuinely empty.
+  it("says so when no property is configured rather than going quiet", async () => {
+    searches();
+    const configured = env.GSC_SITE_URL;
+    env.GSC_SITE_URL = undefined;
+
+    try {
+      const result = await readResult(await report({}));
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Search Console");
+      expect(requests).toHaveLength(0);
+    } finally {
+      env.GSC_SITE_URL = configured;
+    }
+  });
+
   it("is not reachable without an Access assertion", async () => {
     searches();
 
