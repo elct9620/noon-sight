@@ -43,7 +43,8 @@ That loop invites more design than this project wants: its skills offer layered 
 | Debug bypass       | `DEBUG=true` skips verification, and lives only in `.dev.vars`                                                | Local development has no Access in front of it. Production reads `undefined`, so denial is what the absence of configuration already produces; vitest pins the flag off so the suite cannot be disarmed by a developer's local file                                                                                            |
 | Google credentials | jose signs a Service Account JWT, exchanged for an OAuth access token                                         | Workers lack Node crypto, so the official googleapis SDK cannot run                                                                                                                                                                                                                                                            |
 | Token cache        | Cloudflare KV with TTL matching token lifetime                                                                | Access tokens expire in an hour; KV TTL expires them, so no cleanup logic exists                                                                                                                                                                                                                                               |
-| Testing            | vitest with `@cloudflare/vitest-pool-workers`                                                                 | Runs on real workerd, so binding behaviour matches production                                                                                                                                                                                                                                                                  |
+| Report shape       | Every report spans the requested window and the equally long one before it, folded into one row per breakdown | The Data API answers a table addressed by column position, one row per period. Whether traffic rose is the question worth answering and a single number cannot say, so asking the client to call twice and subtract would hand back both the reading and the shape of Google's API                                             |
+| Testing            | vitest with `@cloudflare/vitest-pool-workers`; outbound requests answered by MSW                              | Runs on real workerd, so binding behaviour matches production. `fetchMock` is gone from `cloudflare:test`, and MSW patches the runtime's own `fetch` — which reaches the Worker because tests drive `createApp` inside the runner rather than through a separate Worker                                                        |
 
 ## Dependencies
 
@@ -57,9 +58,11 @@ A package earns its place by evidence, never by reputation or popularity. Before
 
 Prefer the package the ecosystem maintains together over the lighter one maintained alone. A heavy dependency tree is a cost; an abandoned one is a dead end.
 
+That bar governs what reaches the Worker. A devDependency never enters the bundle, so it answers to maintenance and to what runs at install time alone. pnpm declines a dependency's install scripts by default; `allowBuilds` in `pnpm-workspace.yaml` records each decision, so an install script is a line of configuration rather than a veto.
+
 ## Conventions
 
-Secrets (Google Service Account JSON, `TEAM_DOMAIN`, `POLICY_AUD`) live in `wrangler secret` and `.dev.vars`, never in `wrangler.jsonc`. `TEAM_DOMAIN` carries its scheme, since it is both the JWKS host and the expected `iss`. Cloudflare classes these two as vars rather than secrets; keeping them out of the repository costs nothing and publishes neither the team nor the application being guarded.
+Secrets (`GOOGLE_SERVICE_ACCOUNT`, `GA_PROPERTY_ID`, `TEAM_DOMAIN`, `POLICY_AUD`) live in `wrangler secret` and `.dev.vars`, never in `wrangler.jsonc`. `GOOGLE_SERVICE_ACCOUNT` holds the whole Service Account JSON rather than a field per value, because the private key is a PEM whose newlines survive JSON but not a shell. `TEAM_DOMAIN` carries its scheme, since it is both the JWKS host and the expected `iss`. Cloudflare classes these two as vars rather than secrets; keeping them out of the repository costs nothing and publishes neither the team nor the application being guarded.
 
 `POLICY_AUD` cannot be set before the Access application it identifies exists, so a first deployment answers `403 Access is not configured` until Access is enabled on `noon-sight.aotoki.dev` and the secret follows. That denial is the intended state, not a fault. A further hostname joins that same Access application as an additional public hostname; a second application would mint a second AUD, and one `POLICY_AUD` cannot match both.
 
@@ -69,8 +72,14 @@ Bindings that must hold for a test to mean anything are pinned in `vitest.config
 
 Every MCP tool carries at least one vitest case covering the success path and a denied-access path.
 
+One tool per question, not per breakdown. Tools that differ only in which dimension they group by are one tool with a parameter. What keeps that from being an API in disguise is what the parameter enumerates: a closed list of questions worth asking is a design, a passthrough of arbitrary API fields is a copy.
+
+Under 2026-07-28 a request repeats in headers what it is calling — `Mcp-Method`, and `Mcp-Name` for anything the body names — so an intermediary can route without reading the body. The server rejects the two disagreeing, which is what a request modelled on a 1.x example runs into first.
+
 `compatibility_date` must stay within what the bundled workerd supports, or `pnpm test` fails to boot the runtime. Raise it only together with a wrangler upgrade.
 
 Local workerd — vitest and `wrangler dev` alike — permits `new Function` through an unsafe-eval binding that production does not. A green suite says nothing about dynamic code generation, so keep it off the runtime path by construction rather than trusting a test to catch it.
+
+The test pool pushes `nodejs_compat_v2` onto its runner whatever `wrangler.jsonc` says. A test-only Node dependency therefore needs no production flag, and — as with unsafe-eval — a green suite says nothing about whether the deployed bundle is free of Node.
 
 `.claude/hooks/stop.sh` gates the end of a turn on `typecheck` and `test`, so broken types or failing tests are never handed back. `.claude/hooks/edit.sh` formats each written file, keeping formatting out of review diffs.
