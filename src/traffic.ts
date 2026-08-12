@@ -1,6 +1,7 @@
 import { type McpServer, fromJsonSchema } from "@modelcontextprotocol/server";
 import { env } from "cloudflare:workers";
-import { CURRENT, PREVIOUS, compare, runReport } from "./analytics";
+import { compare, runReport } from "./analytics";
+import { settled, windows } from "./period";
 
 /**
  * Each breakdown names a question rather than a column: what a report can be
@@ -11,9 +12,11 @@ const BREAKDOWNS = {
   channel: "sessionDefaultChannelGroup",
   source: "sessionSourceMedium",
   page: "landingPagePlusQueryString",
-  country: "country",
-  // The code rather than the name: "Chinese" merges audiences that read
-  // nothing alike, and which one a visitor is is the point of asking.
+  // Codes rather than names for both, for reasons that happen to agree. A name
+  // is no coordinate two sources can share, and Search Console answers in ISO
+  // codes and nothing else; and "Chinese" merges audiences that read nothing
+  // alike, when which one a visitor is is the point of asking.
+  country: "countryId",
   language: "languageCode",
   device: "deviceCategory",
   visitor_type: "newVsReturning",
@@ -42,6 +45,7 @@ type Input = {
   breakdown?: Breakdown[];
   where?: Partial<Record<Breakdown, string>>;
   days?: number;
+  until?: string;
   limit?: number;
 };
 
@@ -62,13 +66,19 @@ const inputSchema = fromJsonSchema<Input>({
       ),
       additionalProperties: false,
       description:
-        'Narrow the report to one segment, keyed the same way as `breakdown` and valued as the report itself reports it — `{"country": "Taiwan"}`, `{"channel": "Organic Search"}`. Several keys must all hold. A segment can be narrowed on without being grouped by.',
+        'Narrow the report to one segment, keyed the same way as `breakdown` and valued as the report itself reports it — `{"country": "TW"}`, `{"channel": "Organic Search"}`. Several keys must all hold. A segment can be narrowed on without being grouped by.',
     },
     days: {
       type: "integer",
       minimum: 1,
       maximum: 365,
-      description: `How many days back to report on, ending yesterday. Defaults to ${DEFAULT_DAYS}.`,
+      description: `How many days each of the two periods covers. Defaults to ${DEFAULT_DAYS}.`,
+    },
+    until: {
+      type: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}$",
+      description:
+        "The last day the report covers, as YYYY-MM-DD. Defaults to the most recent day every source here has finished counting, so reports drawn from different sources cover the same days and can be read side by side. Name a later one to trade that alignment for fresher Analytics days. The answer always states the dates it used.",
     },
     limit: {
       type: "integer",
@@ -95,16 +105,6 @@ const segment = (where: Partial<Record<Breakdown, string>>) => {
   return expressions.length ? { andGroup: { expressions } } : undefined;
 };
 
-/** Google reads `NdaysAgo`, so the windows need no date arithmetic here. */
-const windows = (days: number) => [
-  { name: CURRENT, startDate: `${days}daysAgo`, endDate: "yesterday" },
-  {
-    name: PREVIOUS,
-    startDate: `${days * 2}daysAgo`,
-    endDate: `${days + 1}daysAgo`,
-  },
-];
-
 export const registerTrafficReport = (server: McpServer) =>
   server.registerTool(
     "traffic_report",
@@ -118,13 +118,14 @@ export const registerTrafficReport = (server: McpServer) =>
       breakdown = [],
       where = {},
       days = DEFAULT_DAYS,
+      until = settled(),
       limit = DEFAULT_LIMIT,
     }) => {
       if (!env.GA_PROPERTY_ID) {
         throw new Error("No Google Analytics property is configured");
       }
 
-      const periods = windows(days);
+      const periods = windows(until, days);
       const report = await runReport(env.GA_PROPERTY_ID, {
         dimensions: breakdown.map((key) => ({ name: BREAKDOWNS[key] })),
         metrics: METRICS.map((name) => ({ name })),

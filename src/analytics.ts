@@ -1,15 +1,12 @@
 import { accessToken, refusal } from "./google";
+import { CURRENT, PREVIOUS } from "./period";
 
 const DATA_API = "https://analyticsdata.googleapis.com/v1beta";
 
 /**
- * Google names the two date ranges back to the caller through a `dateRange`
- * dimension it adds to every row, so these names are how a row says which
- * period it belongs to.
+ * Google adds this dimension to every row, carrying the name the request gave
+ * the date range, so it is how a row says which period it belongs to.
  */
-export const CURRENT = "current";
-export const PREVIOUS = "previous";
-
 const PERIOD_DIMENSION = "dateRange";
 
 type Header = { name: string };

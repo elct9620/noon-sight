@@ -9,7 +9,15 @@ import {
 import { env } from "cloudflare:workers";
 import { SignJWT, generateKeyPair } from "jose";
 import { HttpResponse, http } from "msw";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { createApp } from "../src/index";
 import { server } from "./setup";
 
@@ -36,7 +44,16 @@ beforeAll(async () => {
 // the answer it produced.
 let requests: Record<string, unknown>[];
 
+// The window is now computed from today, so today is pinned rather than the
+// arithmetic being recomputed by the cases that exist to check it. Only `Date`
+// is faked: the timers MSW and fetch run on have to keep moving.
+const TODAY = "2026-08-12T09:00:00Z";
+
+afterEach(() => vi.useRealTimers());
+
 beforeEach(async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(TODAY));
   requests = [];
   const { keys: cached } = await env.TOKEN_CACHE.list();
   await Promise.all(cached.map(({ name }) => env.TOKEN_CACHE.delete(name)));
@@ -217,6 +234,10 @@ describe("traffic_report", () => {
 
   // The second window is what makes the answer actionable, so the tool asks for
   // it rather than leaving the client to work out an equal span and call again.
+  //
+  // It stops short of today by the margin Search Console needs to finish
+  // counting, so a traffic report and a search report cover the same days
+  // without the caller lining them up.
   it("asks Google for the period before the one requested", async () => {
     reports([]);
 
@@ -226,8 +247,43 @@ describe("traffic_report", () => {
     });
 
     expect(requests[0].dateRanges).toEqual([
-      { name: "current", startDate: "7daysAgo", endDate: "yesterday" },
-      { name: "previous", startDate: "14daysAgo", endDate: "8daysAgo" },
+      { name: "current", startDate: "2026-08-03", endDate: "2026-08-09" },
+      { name: "previous", startDate: "2026-07-27", endDate: "2026-08-02" },
+    ]);
+  });
+
+  // Dates rather than Google's `NdaysAgo`: a client that cannot see which days
+  // it was answered for cannot tell a quiet week from a window that stopped
+  // early, and the answer is the only place that can say.
+  it("states the days it covered", async () => {
+    reports([]);
+
+    const { periods } = await readReport(
+      await call("tools/call", {
+        name: "traffic_report",
+        arguments: { days: 28 },
+      }),
+    );
+
+    expect(periods).toEqual([
+      { name: "current", startDate: "2026-07-13", endDate: "2026-08-09" },
+      { name: "previous", startDate: "2026-06-15", endDate: "2026-07-12" },
+    ]);
+  });
+
+  // Alignment is the default, not the only option: fresher Analytics days are
+  // there for the asking, at the cost of lining up with search.
+  it("ends where it is told to", async () => {
+    reports([]);
+
+    await call("tools/call", {
+      name: "traffic_report",
+      arguments: { days: 7, until: "2026-08-11" },
+    });
+
+    expect(requests[0].dateRanges).toEqual([
+      { name: "current", startDate: "2026-08-05", endDate: "2026-08-11" },
+      { name: "previous", startDate: "2026-07-29", endDate: "2026-08-04" },
     ]);
   });
 
@@ -238,7 +294,7 @@ describe("traffic_report", () => {
 
     await call("tools/call", {
       name: "traffic_report",
-      arguments: { breakdown: ["page"], where: { country: "Taiwan" } },
+      arguments: { breakdown: ["page"], where: { country: "TW" } },
     });
 
     expect(requests[0].dimensionFilter).toEqual({
@@ -246,8 +302,8 @@ describe("traffic_report", () => {
         expressions: [
           {
             filter: {
-              fieldName: "country",
-              stringFilter: { value: "Taiwan" },
+              fieldName: "countryId",
+              stringFilter: { value: "TW" },
             },
           },
         ],
@@ -264,7 +320,7 @@ describe("traffic_report", () => {
     await call("tools/call", {
       name: "traffic_report",
       arguments: {
-        where: { country: "Taiwan", channel: "Organic Search" },
+        where: { country: "TW", channel: "Organic Search" },
       },
     });
 
@@ -272,7 +328,7 @@ describe("traffic_report", () => {
       andGroup: {
         expressions: [
           {
-            filter: { fieldName: "country", stringFilter: { value: "Taiwan" } },
+            filter: { fieldName: "countryId", stringFilter: { value: "TW" } },
           },
           {
             filter: {
@@ -339,6 +395,24 @@ describe("traffic_report", () => {
 
     expect(rows).toHaveLength(1);
     expect(rows[0].channel).toBe("Organic Search");
+  });
+
+  // Google's own relative syntax is the tempting thing to write here, and a
+  // date that never parses would otherwise reach the arithmetic and come back
+  // as a time-value error naming nothing the caller wrote.
+  it("refuses a date it cannot read", async () => {
+    reports([]);
+
+    const response = await call("tools/call", {
+      name: "traffic_report",
+      arguments: { until: "yesterday" },
+    });
+
+    const result = await readResult(response);
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("until");
+    expect(requests).toHaveLength(0);
   });
 
   it("is not reachable without an Access assertion", async () => {
