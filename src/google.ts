@@ -25,6 +25,30 @@ type ServiceAccount = { client_email: string; private_key: string };
 type TokenResponse = { access_token: string; expires_in: number };
 
 /**
+ * Google says why in the body, and one status covers unrelated causes — a
+ * report is refused alike for a property the account was never added to and
+ * for an API nobody enabled. The caller has already passed Access and can read
+ * the whole property anyway, so withholding the sentence buys no secrecy and
+ * costs them the one thing that says which of the two it was.
+ *
+ * The token endpoint and the Data API disagree on where they put it, so both
+ * shapes are read here rather than at each call site.
+ */
+export const refusal = async (response: Response, what: string) => {
+  const body = await response.text();
+  let said = body;
+
+  try {
+    const parsed = JSON.parse(body);
+    said = parsed.error?.message ?? parsed.error_description ?? said;
+  } catch {
+    // A body that is not JSON is already the most useful thing there is.
+  }
+
+  return `${what} (${response.status}): ${said}`;
+};
+
+/**
  * The whole Service Account JSON is one secret rather than a field per value:
  * the private key is a PEM whose newlines survive JSON but not a shell.
  */
@@ -66,9 +90,10 @@ export const accessToken = async (): Promise<string> => {
     }),
   });
 
-  // Google's body names the credential it rejected, so only the status travels.
   if (!response.ok) {
-    throw new Error(`Google refused the service account (${response.status})`);
+    throw new Error(
+      await refusal(response, "Google refused the service account"),
+    );
   }
 
   const { access_token, expires_in } = await response.json<TokenResponse>();

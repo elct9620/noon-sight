@@ -1,4 +1,4 @@
-import { accessToken } from "./google";
+import { accessToken, refusal } from "./google";
 
 const DATA_API = "https://analyticsdata.googleapis.com/v1beta";
 
@@ -49,9 +49,10 @@ export const runReport = async (
     },
   );
 
-  // The body repeats the property and the credential, so only the status does.
   if (!response.ok) {
-    throw new Error(`Google Analytics refused the report (${response.status})`);
+    throw new Error(
+      await refusal(response, "Google Analytics refused the report"),
+    );
   }
 
   return response.json<Report>();

@@ -35,14 +35,19 @@ describe("runReport", () => {
     expect(authorization).toBe("Bearer ya29.report");
   });
 
-  // The refusal body repeats the property and the credential, so a client that
-  // is allowed to call the tool is not thereby told what it was called with.
-  it("reports a refusal without repeating what Google said", async () => {
+  // One status covers unrelated causes: a property the account was never added
+  // to, and an API nobody enabled, both answer 403. Only Google's sentence says
+  // which, and the caller has already passed Access.
+  it("repeats what Google said when it refuses", async () => {
     server.use(
       http.post(REPORT_URL, () =>
         HttpResponse.json(
           {
-            error: { message: "User does not have access to property 123456" },
+            error: {
+              status: "PERMISSION_DENIED",
+              message:
+                "Google Analytics Data API has not been used in project 000000000000 before or it is disabled.",
+            },
           },
           { status: 403 },
         ),
@@ -50,7 +55,7 @@ describe("runReport", () => {
     );
 
     await expect(runReport("123456", {})).rejects.toThrow(
-      "Google Analytics refused the report (403)",
+      "Google Analytics refused the report (403): Google Analytics Data API has not been used in project 000000000000 before or it is disabled.",
     );
   });
 });

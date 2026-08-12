@@ -72,6 +72,8 @@ Bindings that must hold for a test to mean anything are pinned in `vitest.config
 
 Every MCP tool carries at least one vitest case covering the success path and a denied-access path.
 
+A tool that throws has its message turned into an `isError` result, so what it says reaches the model rather than only the client. Upstream refusals therefore travel with whatever the upstream said: one status covers unrelated causes — a Google `403` means both a property the account was never added to and an API nobody enabled — and the caller has already passed Access, so withholding the sentence buys no secrecy and costs the only thing that tells the two apart. Test fixtures quoting such a message use a placeholder identifier; a real one publishes the project for no benefit, the same reason `POLICY_AUD` stays out.
+
 One tool per question, not per breakdown. Tools that differ only in which dimension they group by are one tool with a parameter. What keeps that from being an API in disguise is what the parameter enumerates: a closed list of questions worth asking is a design, a passthrough of arbitrary API fields is a copy.
 
 Under 2026-07-28 a request repeats in headers what it is calling — `Mcp-Method`, and `Mcp-Name` for anything the body names — so an intermediary can route without reading the body. The server rejects the two disagreeing, which is what a request modelled on a 1.x example runs into first.

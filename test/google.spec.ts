@@ -76,9 +76,9 @@ describe("accessToken", () => {
     expect(exchanges).toHaveLength(1);
   });
 
-  // Google's rejection body names the credential it refused, so the caller is
-  // told the request failed and nothing more.
-  it("reports a refusal without repeating what Google said", async () => {
+  // The caller is an operator who has already passed Access, and one status
+  // covers unrelated causes — so what Google said is the whole diagnosis.
+  it("repeats what Google said when it refuses", async () => {
     server.use(
       http.post(TOKEN_ENDPOINT, () =>
         HttpResponse.json(
@@ -92,7 +92,7 @@ describe("accessToken", () => {
     );
 
     await expect(accessToken()).rejects.toThrow(
-      "Google refused the service account (400)",
+      "Google refused the service account (400): Invalid JWT Signature",
     );
   });
 });
