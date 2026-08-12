@@ -167,16 +167,51 @@ describe("traffic_report", () => {
 
     expect(rows).toMatchObject([
       {
-        sessionDefaultChannelGroup: "Organic Search",
+        channel: "Organic Search",
         current: { sessions: 120 },
         previous: { sessions: 96 },
       },
       {
-        sessionDefaultChannelGroup: "Referral",
+        channel: "Referral",
         current: { sessions: 10 },
         previous: { sessions: 8 },
       },
     ]);
+  });
+
+  // The breakdown a client asked for is the vocabulary it gets back; answering
+  // `page` with `landingPagePlusQueryString` would let Google's names out
+  // through the parameter that was meant to close them off.
+  it("names a row the way the breakdown was asked for", async () => {
+    server.use(
+      http.post(REPORT_URL, () =>
+        HttpResponse.json({
+          dimensionHeaders: [
+            { name: "landingPagePlusQueryString" },
+            { name: "dateRange" },
+          ],
+          metricHeaders: [{ name: "sessions" }],
+          rows: [
+            {
+              dimensionValues: [
+                { value: "/posts/hello" },
+                { value: "current" },
+              ],
+              metricValues: [{ value: "40" }],
+            },
+          ],
+        }),
+      ),
+    );
+
+    const { rows } = await readReport(
+      await call("tools/call", {
+        name: "traffic_report",
+        arguments: { breakdown: ["page"] },
+      }),
+    );
+
+    expect(rows[0]).toMatchObject({ page: "/posts/hello" });
   });
 
   // The second window is what makes the answer actionable, so the tool asks for
@@ -224,7 +259,7 @@ describe("traffic_report", () => {
     );
 
     expect(rows).toHaveLength(1);
-    expect(rows[0].sessionDefaultChannelGroup).toBe("Organic Search");
+    expect(rows[0].channel).toBe("Organic Search");
   });
 
   it("is not reachable without an Access assertion", async () => {

@@ -101,9 +101,20 @@ export const registerTrafficReport = (server: McpServer) =>
       // Ranking and cutting happen after both periods are folded together: a
       // row Google truncated would otherwise come back as a period of zero and
       // read as a collapse rather than as an absence.
+      //
+      // A row is then named the way it was asked for. Answering `page` with
+      // `landingPagePlusQueryString` would give the tool two vocabularies and
+      // let Google's back out through the one that was meant to be closed.
       const rows = compare(report)
         .sort((a, b) => b.current.sessions - a.current.sessions)
-        .slice(0, limit);
+        .slice(0, limit)
+        .map(({ current, previous, ...dimensions }) => ({
+          ...Object.fromEntries(
+            breakdown.map((key) => [key, dimensions[BREAKDOWNS[key]]]),
+          ),
+          current,
+          previous,
+        }));
 
       return {
         content: [{ type: "text", text: JSON.stringify({ periods, rows }) }],
