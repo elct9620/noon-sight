@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { CURRENT, PREVIOUS, settled, windows } from "../src/period";
+import {
+  CURRENT,
+  PREVIOUS,
+  instants,
+  settled,
+  windows,
+  yesterday,
+} from "../src/period";
 
 describe("windows", () => {
   it("ends the requested window on the anchor and spans it inclusively", () => {
@@ -25,6 +32,33 @@ describe("windows", () => {
       { name: CURRENT, startDate: "2026-03-01", endDate: "2026-03-01" },
       { name: PREVIOUS, startDate: "2026-02-28", endDate: "2026-02-28" },
     ]);
+  });
+});
+
+describe("yesterday", () => {
+  // A source counting at the edge has nothing to wait for, and the week it
+  // keeps is too short to spend three days of it waiting on another source.
+  it("stops at the last whole day rather than at the shared anchor", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-12T09:00:00Z"));
+
+    expect(yesterday()).toBe("2026-08-11");
+
+    vi.useRealTimers();
+  });
+});
+
+describe("instants", () => {
+  // Both ends of a window are inclusive days, and a source filtering on
+  // instants excludes its upper bound — so the last day is only counted when
+  // the range runs to the midnight after it.
+  it("runs to the midnight after the day the window ends on", () => {
+    expect(
+      instants({ startDate: "2026-08-09", endDate: "2026-08-11" }),
+    ).toEqual({
+      from: Date.parse("2026-08-09T00:00:00Z"),
+      to: Date.parse("2026-08-12T00:00:00Z"),
+    });
   });
 });
 

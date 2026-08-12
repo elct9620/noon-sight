@@ -34,10 +34,33 @@ export const today = () => iso(Date.now());
 export const settled = () => iso(Date.now() - LAG_DAYS * DAY_MS);
 
 /**
+ * A source counting at the edge has no such lag, and waiting for one would
+ * spend days of a window it can only reach back a week into. The last whole
+ * day is the freshest one it can answer for completely.
+ */
+export const yesterday = () => iso(Date.now() - DAY_MS);
+
+/**
  * Both ends are inclusive, which is how each API reads a date range: a 28-day
  * window ends on the anchor and starts 27 days earlier, and the window before
  * it ends the day before that — abutting, never overlapping.
  */
+/**
+ * Read as instants for a source that filters on them rather than on dates. The
+ * upper bound is exclusive there, so the day a window ends on is only counted
+ * when the range runs to the midnight after it.
+ */
+export const instants = ({
+  startDate,
+  endDate,
+}: {
+  startDate: string;
+  endDate: string;
+}) => ({
+  from: Date.parse(`${startDate}T00:00:00Z`),
+  to: Date.parse(`${endDate}T00:00:00Z`) + DAY_MS,
+});
+
 export const windows = (until: string, days: number) => [
   { name: CURRENT, startDate: before(until, days - 1), endDate: until },
   {
