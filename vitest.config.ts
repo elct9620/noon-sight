@@ -23,6 +23,9 @@ export default defineConfig({
           POLICY_AUD: "test-policy-aud",
           GA_PROPERTY_ID: "123456",
           GSC_SITE_URL: "sc-domain:test.example",
+          CLOUDFLARE_API_TOKEN: "cf-test-token",
+          CLOUDFLARE_ZONE_ID: "zone-test",
+          CLOUDFLARE_SITE_HOST: "blog.test.example",
           GOOGLE_SERVICE_ACCOUNT: JSON.stringify({
             client_email: "noon-sight@test.iam.gserviceaccount.com",
             private_key: await exportPKCS8(privateKey),

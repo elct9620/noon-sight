@@ -11,5 +11,10 @@ declare namespace Cloudflare {
     GOOGLE_SERVICE_ACCOUNT?: string;
     GA_PROPERTY_ID?: string;
     GSC_SITE_URL?: string;
+    CLOUDFLARE_API_TOKEN?: string;
+    CLOUDFLARE_ZONE_ID?: string;
+    // A zone carries every hostname under it, so a server answering for one
+    // site names it. Absent, the report covers the whole zone.
+    CLOUDFLARE_SITE_HOST?: string;
   }
 }
