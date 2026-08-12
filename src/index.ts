@@ -16,7 +16,7 @@ import { registerTrafficReport } from "./traffic";
  * measurement rather than what holds of one provider — a finding about one
  * property would decay here with no test watching it.
  */
-const INSTRUCTIONS = `Every report answers for a period and for the equally long period before it. A row is a pair: read the change, not the number.
+const INSTRUCTIONS = `Every report answers for a period and for the equally long period before it. A row is a pair: read the change, not the number. Where a source no longer holds the earlier period it says so, and those rows carry no pair — an absence of record rather than an absence of traffic.
 
 An ungrouped total merges populations that behave nothing alike, and is usually the least informative row in an answer. Group it, or narrow to one segment, before concluding anything from it.
 
