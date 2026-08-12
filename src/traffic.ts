@@ -12,6 +12,9 @@ const BREAKDOWNS = {
   source: "sessionSourceMedium",
   page: "landingPagePlusQueryString",
   country: "country",
+  // The code rather than the name: "Chinese" merges audiences that read
+  // nothing alike, and which one a visitor is is the point of asking.
+  language: "languageCode",
   device: "deviceCategory",
   visitor_type: "newVsReturning",
 } as const;
@@ -50,7 +53,7 @@ const inputSchema = fromJsonSchema<Input>({
       items: { type: "string", enum: Object.keys(BREAKDOWNS) },
       maxItems: 2,
       description:
-        "How to group the traffic. Omit for the site as a whole. `channel` and `source` say where visitors came from, `page` which content brought them in, `country`, `device` and `visitor_type` who they are. Two may be combined to cross them.",
+        "How to group the traffic. Omit for the site as a whole. `channel` and `source` say where visitors came from, `page` which content brought them in, `country`, `language`, `device` and `visitor_type` who they are. Two may be combined to cross them.",
     },
     where: {
       type: "object",

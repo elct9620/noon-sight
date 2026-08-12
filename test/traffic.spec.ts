@@ -145,6 +145,7 @@ describe("traffic_report", () => {
       "source",
       "page",
       "country",
+      "language",
       "device",
       "visitor_type",
     ]);
@@ -282,6 +283,19 @@ describe("traffic_report", () => {
         ],
       },
     });
+  });
+
+  // The name would merge zh-tw with zh-cn, and which one a visitor reads in is
+  // the whole reason for asking.
+  it("groups language by code rather than by name", async () => {
+    reports([]);
+
+    await call("tools/call", {
+      name: "traffic_report",
+      arguments: { breakdown: ["language"] },
+    });
+
+    expect(requests[0].dimensions).toEqual([{ name: "languageCode" }]);
   });
 
   it("asks for no filter when no segment is named", async () => {
