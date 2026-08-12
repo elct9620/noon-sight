@@ -8,5 +8,6 @@ declare namespace Cloudflare {
     TEAM_DOMAIN?: string;
     POLICY_AUD?: string;
     DEBUG?: string;
+    GOOGLE_SERVICE_ACCOUNT?: string;
   }
 }

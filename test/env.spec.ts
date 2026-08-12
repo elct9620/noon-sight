@@ -14,4 +14,12 @@ describe("test environment", () => {
     expect(env.TEAM_DOMAIN).toBe("https://test.cloudflareaccess.com");
     expect(env.POLICY_AUD).toBe("test-policy-aud");
   });
+
+  // A developer's own Service Account would sign assertions that reach Google
+  // for real, so the suite signs with a key it generated instead.
+  it("signs with a generated service account rather than a developer's", () => {
+    expect(env.GOOGLE_SERVICE_ACCOUNT).toContain(
+      "noon-sight@test.iam.gserviceaccount.com",
+    );
+  });
 });

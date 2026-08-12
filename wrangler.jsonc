@@ -16,12 +16,15 @@
   // "vars": {
   //   "MY_VAR": "my-variable"
   // },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
+  // A Google access token lives an hour and is the same for every request, so
+  // it is cached rather than minted per call. KV expires it by TTL, which is
+  // why nothing here ever deletes a key.
+  "kv_namespaces": [
+    {
+      "binding": "TOKEN_CACHE",
+      "id": "34f915363ad14a0d907c15d5a21c07f7",
+    },
+  ],
   // "r2_buckets": [
   //   {
   //     "binding": "MY_BUCKET",
