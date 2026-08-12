@@ -154,9 +154,10 @@ const readReport = async (response: Response) =>
 describe("traffic_report", () => {
   it("is offered with its breakdowns spelled out", async () => {
     const { tools } = await readResult(await call("tools/list"));
-    const [tool] = tools;
+    const tool = tools.find(
+      ({ name }: { name: string }) => name === "traffic_report",
+    );
 
-    expect(tool.name).toBe("traffic_report");
     expect(tool.inputSchema.properties.breakdown.items.enum).toEqual([
       "channel",
       "source",
