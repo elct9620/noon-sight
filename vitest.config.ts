@@ -26,6 +26,8 @@ export default defineConfig({
           CLOUDFLARE_API_TOKEN: "cf-test-token",
           CLOUDFLARE_ZONE_ID: "zone-test",
           CLOUDFLARE_SITE_HOST: "blog.test.example",
+          BUFFER_API_KEY: "buffer-test-key",
+          BUFFER_ORGANIZATION_ID: "org-test",
           GOOGLE_SERVICE_ACCOUNT: JSON.stringify({
             client_email: "noon-sight@test.iam.gserviceaccount.com",
             private_key: await exportPKCS8(privateKey),

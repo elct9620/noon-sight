@@ -23,4 +23,11 @@ describe("test environment", () => {
     );
     expect(env.GA_PROPERTY_ID).toBe("123456");
   });
+
+  // A developer's own Buffer key reads their real posts, and the organization
+  // it names is the one every content test would then be written against.
+  it("reads content from a stated key and organization", () => {
+    expect(env.BUFFER_API_KEY).toBe("buffer-test-key");
+    expect(env.BUFFER_ORGANIZATION_ID).toBe("org-test");
+  });
 });
