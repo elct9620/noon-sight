@@ -14,9 +14,16 @@ Deliberately small: it carries the tools that are actually used, not a full API 
   content_report   search_report  request_report    traffic_report
 ```
 
-A source earns its place by answering what the others structurally cannot. Search Console is the only one that counts people who were shown the site and did not come. Cloudflare sits in front of the request and sees whoever asked, including everything that runs no JavaScript and so reaches neither of the others. Analytics only ever meets someone who already arrived and rendered the page. Buffer is the only one that says what the site is about rather than how it was read.
+A source earns its place by answering what the others structurally cannot.
 
-Every figure is what one measurement system saw, not what happened — two sources disagreeing does not make either wrong.
+| Source           | Sees                                              | Blind to                                      |
+| ---------------- | ------------------------------------------------- | --------------------------------------------- |
+| Buffer           | what was published, before anyone read it         | anything posted outside Buffer                |
+| Search Console   | everyone shown the site, whether they came or not | everyone who arrived from anywhere but Google |
+| Cloudflare       | every request at the edge, JavaScript or not      | what happened inside the page, and last week  |
+| Google Analytics | whoever arrived and rendered the page             | anyone who ran no JavaScript                  |
+
+Every figure is what one measurement system saw, not what happened. Two sources disagreeing does not make either wrong.
 
 ## Tools
 
@@ -27,11 +34,11 @@ Every figure is what one measurement system saw, not what happened — two sourc
 | `request_report` | Cloudflare zone analytics        | requests and bytes at the edge                                 | `bot` `page` `country` `device` `status` `host`                        | `where` `days` `until` `limit` | 7 days, paired if kept |
 | `content_report` | Buffer, and the pages themselves | the posts themselves, with what each page declares it is about | —                                                                      | `kind` `days` `until` `limit`  | 28 days, unpaired      |
 
-The first three are quantitative and share one shape: every row is a pair, the requested period against the equally long one before it, because whether a number rose is the question worth answering and one number cannot say it. Where a source no longer holds the earlier period it says so, and the pair reads null — an absence of record rather than an absence of traffic.
+The first three count, and every row is a pair: the requested period against the equally long one before it, because whether a number rose is what a count is for. Where a source no longer holds the earlier period, that side reads null — no record, rather than no traffic.
 
-The fourth is qualitative and inherits none of that shape. A single request means nothing alone, which is why traffic is grouped and counted; a single post is already the whole of what it says, and `8 posts about Ruby` is what a reader knew before asking. Counting is theirs to do, on the text they now hold.
+`content_report` does not count. A single post is already the whole of what it says, so it hands back the posts themselves and leaves the counting to whoever asked.
 
-How to read the answers arrives with the handshake as MCP `instructions`, rather than as a tool nobody thinks to call.
+How to read any of it arrives with the handshake, as MCP `instructions`.
 
 ## How a request flows
 
@@ -55,7 +62,7 @@ How to read the answers arrives with the handshake as MCP `instructions`, rather
                 Account JWT
 ```
 
-An MCP client is not a browser and cannot follow Access's `302`, so Managed OAuth answers it with a `401` challenge instead. Access resolves the resulting token itself and still forwards `Cf-Access-Jwt-Assertion`, so the Worker implements no OAuth of its own and an OAuth request is indistinguishable from a browser one.
+An MCP client is not a browser and cannot follow Access's `302`. Managed OAuth answers it with a `401` challenge instead, resolves the token itself, and still forwards `Cf-Access-Jwt-Assertion` — so the Worker implements no OAuth of its own.
 
 Two KV namespaces, both provisioned by wrangler and named after the Worker:
 
@@ -75,7 +82,7 @@ Access cannot be named before it exists, so the order matters at exactly one poi
  403 "Access is not configured" until the secrets land — the intended state, not a fault
 ```
 
-Each source stands alone. A tool whose source is unconfigured stays registered and says what is missing, so the server is useful with one source configured and complete with four; withholding it would leave a caller unable to tell a server half set up from a site with nothing to report.
+Each source stands alone. A tool whose source is unconfigured stays registered and says what is missing, so one configured source is already useful — and a server half set up is told apart from a site with nothing to report.
 
 ### 1. The Worker
 
@@ -84,7 +91,7 @@ pnpm install
 pnpm deploy
 ```
 
-The route in `wrangler.jsonc` is a custom domain, and is the hostname to change for your own deployment. `workers.dev` and per-version preview URLs are deliberately not minted: Access is enabled per hostname, so every entrance has to be one somebody remembers to guard.
+The route in `wrangler.jsonc` is a custom domain; change it to your own hostname. `workers.dev` and preview URLs are deliberately not minted: Access is enabled per hostname, and an unguarded entrance is the failure mode.
 
 ### 2. Cloudflare Access
 
@@ -106,7 +113,9 @@ pnpm wrangler secret put TEAM_DOMAIN
 pnpm wrangler secret put POLICY_AUD
 ```
 
-A further hostname joins this same application as an additional public hostname. A second application would mint a second AUD, and one `POLICY_AUD` cannot match both. Managed OAuth registers each client dynamically, and a client whose registration Access refused keeps that failure until it is removed and added again — allowlisting its callback afterwards is not enough on its own.
+A further hostname joins this same application as an additional public hostname. A second application would mint a second AUD, and one `POLICY_AUD` cannot match both.
+
+Access registers each client dynamically and keeps a refused registration, so allowlist the callback before the client first tries. Afterwards, it has to be removed and added again.
 
 ### 3. Google Analytics and Search Console
 
@@ -125,7 +134,7 @@ One Service Account serves both, and asks for nothing wider than the two read sc
 | `GA_PROPERTY_ID`         | The numeric GA4 property id, from Admin → Property details                                                                                                        |
 | `GSC_SITE_URL`           | Whatever string `sites.list` returns, verbatim — `sc-domain:example.com` or a trailing-slash URL. A near miss answers `403`                                       |
 
-Workers carry no Node crypto, so the official Google SDK cannot run here: jose signs the Service Account assertion and Google exchanges it for a bearer token, cached in KV for its hour.
+Workers carry no Node crypto, so the official Google SDK cannot run here. jose signs the assertion, Google exchanges it for a bearer token, and KV holds that token for its hour.
 
 ### 4. Cloudflare zone analytics
 
@@ -140,9 +149,9 @@ Workers carry no Node crypto, so the official Google SDK cannot run here: jose s
 | `CLOUDFLARE_ZONE_ID`   | The zone the site lives in                                                                                                |
 | `CLOUDFLARE_SITE_HOST` | The hostname this server answers for, e.g. `blog.example.com`                                                             |
 
-A zone is a billing boundary carrying every hostname under it, so this source takes two identifiers where the others take one. `CLOUDFLARE_SITE_HOST` is then read twice over: it says which site inside the zone a request report covers, and it is what makes a link in a post a link to this site rather than to anywhere else. Left unset, a request report covers the whole zone and every shared page reads as somebody else's.
+A zone is a billing boundary carrying every hostname under it, so this source takes two identifiers where the others take one. `CLOUDFLARE_SITE_HOST` narrows a request report to one site, and tells a link to this site from a link anywhere else. Left unset, the report covers the whole zone.
 
-A refusal from this API arrives as `200` with an `errors` array, so a token without the permission, a field the plan does not carry and a window wider than it allows all look like success to anything reading the status. The tool reads the array and says what Cloudflare said.
+Refusals arrive as `200` with an `errors` array, so a token without the permission looks like success to anything reading the status. The tool reads the array and repeats what Cloudflare said.
 
 ### 5. Buffer
 
@@ -163,9 +172,9 @@ curl -s https://api.buffer.com \
 | `BUFFER_API_KEY`         | The key as it stands, like Cloudflare's |
 | `BUFFER_ORGANIZATION_ID` | The `id` the query above answers with   |
 
-Naming the organization in configuration makes it the same kind of value as the property and the zone, and spares every report the round trip that would otherwise start it.
+Naming the organization here makes it the same kind of value as the property and the zone, and spares every report the round trip that would otherwise start it.
 
-`content_report` then asks each linked page what it is about over the public web — `Accept: text/markdown` first, then schema.org in the HTML — so `CLOUDFLARE_SITE_HOST` is what tells a link to this site from a link anywhere else. A page declaring nothing is reported as declaring nothing, which is not the same as not being published.
+`content_report` then asks each linked page what it is about — `Accept: text/markdown` first, then schema.org in the HTML — which is why it also needs `CLOUDFLARE_SITE_HOST`. A page declaring nothing is reported as declaring nothing.
 
 ### Every secret at a glance
 
@@ -179,11 +188,11 @@ Naming the organization in configuration makes it the same kind of value as the 
 | `CLOUDFLARE_SITE_HOST`                      | `request_report` `content_report` | the zone answers whole, and no post is recognised as this site's |
 | `BUFFER_API_KEY` `BUFFER_ORGANIZATION_ID`   | `content_report`                  | it refuses, naming the one that is missing                       |
 
-Secrets live in `wrangler secret` and `.dev.vars`, never in `wrangler.jsonc`. Cloudflare classes the first two as vars rather than secrets; keeping them out of the repository costs nothing and publishes neither the team nor the application being guarded.
+Secrets live in `wrangler secret` and `.dev.vars`, never in `wrangler.jsonc`. Cloudflare classes the first two as vars rather than secrets, but keeping them out of the repository publishes neither the team nor the application being guarded.
 
 ## Local development
 
-`.dev.vars` carries the same names, plus `DEBUG=true`, which skips Access verification — local development has no Access in front of it. Production reads `undefined` for the flag, so denial is what the absence of configuration already produces, and vitest pins it off so the suite cannot be disarmed by a developer's local file.
+`.dev.vars` carries the same names, plus `DEBUG=true`, which skips Access verification — local development has no Access in front of it. Production reads no such flag and therefore denies; vitest pins it off, so no local file can disarm the suite.
 
 | Command           | Does                                                           |
 | ----------------- | -------------------------------------------------------------- |
@@ -196,7 +205,7 @@ Secrets live in `wrangler secret` and `.dev.vars`, never in `wrangler.jsonc`. Cl
 
 ## Connecting a client
 
-Add `https://<your-hostname>/mcp` as a remote MCP server. The first call is answered with a `401` naming Access's OAuth endpoints, the client registers itself and walks the flow, and Access evaluates its policy before any request reaches the Worker.
+Add `https://<your-hostname>/mcp` as a remote MCP server. The first call is answered with a `401` naming Access's OAuth endpoints; the client registers itself and walks the flow, and Access evaluates its policy before anything reaches the Worker.
 
 ## License
 
