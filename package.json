@@ -2,6 +2,7 @@
   "name": "noon-sight",
   "type": "module",
   "license": "Apache-2.0",
+  "packageManager": "pnpm@11.4.0",
   "scripts": {
     "dev": "wrangler dev",
     "test": "vitest run",
