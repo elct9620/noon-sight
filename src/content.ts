@@ -214,7 +214,9 @@ const published = async (start: string, end: string, limit: number) => {
 
     held.push(...posts.edges.map(({ node }) => node));
 
-    if (!posts.pageInfo.hasNextPage) break;
+    // A page that says there is more but names no cursor would be asked for
+    // again, and the same posts arriving twice is a piece reported twice.
+    if (!posts.pageInfo.hasNextPage || !posts.pageInfo.endCursor) break;
     if (acts(held).length >= limit) break;
 
     after = posts.pageInfo.endCursor;

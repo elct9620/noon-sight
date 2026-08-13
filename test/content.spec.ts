@@ -309,6 +309,26 @@ describe("content_report", () => {
     expect(answer.items[0].page).toBe(PAGE);
   });
 
+  // Buffer may say there is more without naming where to continue. Asking
+  // again from the same place would hand back the same posts, and one piece
+  // reported twice is worse than a window that stopped early.
+  it("stops when there is more but no cursor to reach it by", async () => {
+    buffer([], {
+      data: {
+        posts: {
+          edges: ACT.map((node) => ({ node })),
+          pageInfo: { hasNextPage: true, endCursor: null },
+        },
+      },
+    });
+    article(FRONTMATTER);
+
+    const { items } = await readReport(await report());
+
+    expect(asked).toHaveLength(1);
+    expect(items).toHaveLength(1);
+  });
+
   it("repeats what Buffer said when it refuses", async () => {
     buffer([], {
       data: null,
