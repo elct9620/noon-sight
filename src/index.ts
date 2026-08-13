@@ -13,15 +13,17 @@ import { registerTrafficReport } from "./traffic";
  * point: a reader who has already been handed numbers does not think to ask how
  * to read them.
  *
- * It speaks for every tool this server carries, so it says what holds of site
- * measurement rather than what holds of one provider — a finding about one
- * property would decay here with no test watching it.
+ * It speaks for every tool this server carries, so it says what holds of a
+ * site's traffic and of its content rather than what holds of one provider —
+ * a finding about one property would decay here with no test watching it.
  */
-const INSTRUCTIONS = `Every report answers for a period and for the equally long period before it. A row is a pair: read the change, not the number. Where a source no longer holds the earlier period it says so, and those rows carry no pair — an absence of record rather than an absence of traffic.
+const INSTRUCTIONS = `A traffic report answers for a period and for the equally long period before it. A row is a pair: read the change, not the number. Where a source no longer holds the earlier period it says so, and those rows carry no pair — an absence of record rather than an absence of traffic.
 
 An ungrouped total merges populations that behave nothing alike, and is usually the least informative row in an answer. Group it, or narrow to one segment, before concluding anything from it.
 
 Automation inflates counts but not attention, so judge a population by how long it stayed rather than by how much it registered. Signals a client emits by rendering a page — a scroll, an element coming into view — fire more reliably for automation than for a reader, and are not evidence of interest.
+
+The content report is not one of these. It answers with what was published rather than with how much: a single post is already the whole of what it says, where a single request is nothing on its own. Counting it is yours to do, on the text it hands you. What a piece drew is a separate question — take a page from it to a traffic report rather than expecting a number beside it.
 
 Every figure is what one measurement system saw, not what happened. Each misses a different part, so two sources disagreeing does not make either wrong.`;
 

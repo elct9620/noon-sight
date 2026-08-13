@@ -1,6 +1,7 @@
 /**
- * Every report answers for a period and the equally long one before it, so a
- * row reads as a change rather than as a number.
+ * Every traffic report answers for a period and the equally long one before
+ * it, so a row reads as a change rather than as a number. A content report
+ * takes only the first of the two: text has no change to read.
  *
  * Google Analytics takes these two as the names of its date ranges and echoes
  * them back on every row. Search Console has no such echo — it answers one
