@@ -29,9 +29,16 @@
   // names it after this Worker. A hand-made namespace carries a name that says
   // nothing about what it belongs to, and an account-specific id in the
   // repository is one more thing that has to be true of whoever deploys.
+  // A published piece says what it is about once and then keeps saying it, so
+  // what a page answered is held rather than asked for again. The token cache
+  // wants its value gone before it expires; this one wants staleness, which is
+  // why the two are separate namespaces rather than one with two prefixes.
   "kv_namespaces": [
     {
       "binding": "TOKEN_CACHE",
+    },
+    {
+      "binding": "CONTENT_CACHE",
     },
   ],
   // "r2_buckets": [
