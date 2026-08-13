@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Nothing here writes: the checks read the tree and report through the run itself.
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # pnpm ships a native executable from v11, so pnpm and the runtime it
+      # runs on are installed together and `pnpm install` follows in the same
+      # step — nothing here needs a separate Node setup.
+      - uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2
+        with:
+          version: 11
+          runtime: node@24
+          cache: true
+      # The same three gates `.claude/hooks/stop.sh` holds a turn on, plus the
+      # formatting the edit hook applies locally and nothing verifies remotely.
+      # Every binding a test depends on is pinned in vitest.config.ts, so the
+      # suite needs no `.dev.vars` here.
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm format:check
