@@ -1,0 +1,24 @@
+version: 2
+
+updates:
+  # pnpm is read from the lockfile; the ecosystem it is configured under is npm.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # A version published minutes ago is the one a compromised account ships.
+    # Waiting lets the ecosystem notice first; security updates skip this.
+    cooldown:
+      default-days: 3
+      semver-minor-days: 5
+      semver-major-days: 7
+
+  # The workflows pin actions by commit SHA, so nothing else moves them.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+      semver-minor-days: 5
+      semver-major-days: 7
