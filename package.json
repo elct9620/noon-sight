@@ -19,7 +19,7 @@
     "jose": "^6.2.8"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.20.3",
+    "@cloudflare/vitest-pool-workers": "^0.21.3",
     "msw": "^2.15.0",
     "prettier": "^3.9.6",
     "typescript": "^7.0.2",
