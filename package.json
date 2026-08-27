@@ -16,7 +16,7 @@
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
     "hono": "^4.13.2",
-    "jose": "^6.2.9"
+    "jose": "^6.2.10"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.21.3",
