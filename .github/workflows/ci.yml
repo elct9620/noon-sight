@@ -18,7 +18,7 @@ jobs:
       # runs on are installed together and `pnpm install` follows in the same
       # step — nothing here needs a separate Node setup. Which pnpm is read
       # from `packageManager`, so no version is stated twice.
-      - uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2
+      - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
         with:
           runtime: node@24
           cache: true
